@@ -1,0 +1,46 @@
+version: 0.2
+
+env:
+  variables:
+    GIT_REPO_FRONTEND: "https://github.com/TharunDD/cicdfe.git"
+    GIT_REPO_BACKEND: "https://github.com/TharunDD/cicdbe.git"
+    GIT_BRANCH: "main"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14
+    commands:
+      - "echo Installing necessary tools..."
+      - "yum update -y"
+      - "yum install git"
+
+  pre_build:
+    commands:
+      - "echo Fetching the lambda output artifact value..."
+      - "export REPO_TO_BUILD=$(curl -s https://codepipeline-ap-south-1-402428956422.s3.ap-south-1.amazonaws.com/outart/out.txt)"
+      - "echo Repository to build: $REPO_TO_BUILD"
+      - "mkdir -p build/f build/b"  # Create directories for frontend and backend
+
+  build:
+    commands:
+      - |
+        if [ "$REPO_TO_BUILD" = "frontend" ]; then
+          echo "Cloning frontend repository..."
+          git clone -b $GIT_BRANCH $GIT_REPO_FRONTEND build/f
+        elif [ "$REPO_TO_BUILD" = "backend" ]; then
+          echo "Cloning backend repository..."
+          git clone -b $GIT_BRANCH $GIT_REPO_BACKEND build/b
+        else
+          echo "Invalid REPO_TO_BUILD value. No repository cloned."
+        fi
+
+  post_build:
+    commands:
+      - "echo Build completed for project."
+      - "cd .."
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'build'  # Specifies the base directory where build artifacts are located
